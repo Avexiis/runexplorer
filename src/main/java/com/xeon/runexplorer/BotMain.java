@@ -101,6 +101,7 @@ public final class BotMain {
             router.register(new WikiCommand(wiki));
             router.register(new NewsCommand(news));
             router.register(new TrackCommand(hiscores, trackerRepository));
+            router.register(new ServersCommand(config));
             router.register(new ReloadCommand(config, router));
 
             System.out.println(Ansi.fgGreen("[BOOT] ") + "Loaded Commands");

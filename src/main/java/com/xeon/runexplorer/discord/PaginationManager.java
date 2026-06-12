@@ -69,16 +69,16 @@ public final class PaginationManager {
         }, 3, TimeUnit.MINUTES);
     }
 
-    public static void onButton(ButtonInteractionEvent event) {
+    public static boolean onButton(ButtonInteractionEvent event) {
         String id = event.getComponentId();
         if (id == null || !id.startsWith("pg:")) {
-            return;
+            return false;
         }
 
         String[] parts = id.split(":", 3);
         if (parts.length != 3) {
             event.deferEdit().queue();
-            return;
+            return true;
         }
 
         String action = parts[1];
@@ -86,14 +86,18 @@ public final class PaginationManager {
 
         Session s = SESSIONS.get(token);
         if (s == null) {
-            event.reply("These buttons have expired. Run the command again.").setEphemeral(true).queue();
-            return;
+            event.deferReply(true).queue(
+                    hook -> hook.editOriginal("These buttons have expired. Run the command again.").queue()
+            );
+            return true;
         }
 
         long clicker = event.getUser().getIdLong();
         if (clicker != s.ownerUserId) {
-            event.reply("Only the user who ran this command can use these buttons.").setEphemeral(true).queue();
-            return;
+            event.deferReply(true).queue(
+                    hook -> hook.editOriginal("Only the user who ran this command can use these buttons.").queue()
+            );
+            return true;
         }
 
         int newPage = s.pageIndex;
@@ -103,19 +107,22 @@ public final class PaginationManager {
             newPage = Math.max(0, s.pageIndex - 1);
         } else {
             event.deferEdit().queue();
-            return;
+            return true;
         }
 
         if (newPage == s.pageIndex) {
             event.deferEdit().queue();
-            return;
+            return true;
         }
 
         s.pageIndex = newPage;
 
-        event.editMessageEmbeds(s.pages.get(s.pageIndex))
-                .setComponents(components(token, s.pageIndex, s.pages.size()))
-                .queue();
+        event.deferEdit().queue(
+                hook -> hook.editOriginalEmbeds(s.pages.get(s.pageIndex))
+                        .setComponents(components(token, s.pageIndex, s.pages.size()))
+                        .queue()
+        );
+        return true;
     }
 
     private static void disableSessionButtons(String token) {
